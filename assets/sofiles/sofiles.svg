@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Sofiles</title>
+  <desc id="desc">Original folder and S monogram for Sofiles, personal edition by Sofiane Messaoudi.</desc>
+  <metadata>Copyright (c) 2026 Sofiane Messaoudi. Original geometric artwork. Generated from tools/create_sofiles_icon.py.</metadata>
+  <defs>
+    <linearGradient id="pocket" x1="0" y1="174" x2="0" y2="393" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#107CAE"/><stop offset="1" stop-color="#144E89"/>
+    </linearGradient>
+  </defs>
+  <path fill="#102D4F" d="M 64 166 C 64 148 78 134 96 134 L 181 134 C 191 134 198 138 205 145 L 225 165 L 416 165 C 434 165 448 179 448 197 L 448 356 C 448 377 431 394 410 394 L 102 394 C 81 394 64 377 64 356 Z"/>
+  <path fill="#45C7CA" d="M 304 132 C 304 123 311 116 320 116 L 399 116 C 408 116 415 123 415 132 L 415 172 L 304 172 Z"/>
+  <path fill="#ACE7E4" d="M 267 153 C 267 144 274 137 283 137 L 362 137 C 371 137 378 144 378 153 L 378 184 L 267 184 Z"/>
+  <path fill="url(#pocket)" d="M 64 205 C 64 188 78 174 95 174 L 417 174 C 434 174 448 188 448 205 L 448 355 C 448 376 431 393 410 393 L 102 393 C 81 393 64 376 64 355 Z"/>
+  <path fill="#F7FCFF" transform="matrix(1.2 0 0 1 -49.4 -8)" d="M 309 224 C 291 210 273 205 252 205 C 217 205 193 225 193 253 C 193 282 216 294 246 303 L 267 309 C 281 313 289 319 289 327 C 289 338 279 344 262 344 C 240 344 219 335 201 322 L 182 351 C 204 368 231 378 261 378 C 300 378 327 357 327 325 C 327 295 305 282 274 272 L 253 266 C 237 261 231 257 231 250 C 231 241 239 236 253 236 C 270 236 286 242 299 252 Z"/>
+</svg>

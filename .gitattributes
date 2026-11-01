@@ -1,0 +1,5 @@
+* text=auto
+/updates/latest.xml -text
+/updates/latest.xml.sig -text
+/licenses/Clover-original.txt -text -whitespace
+/licenses/NSIS.txt -text -whitespace

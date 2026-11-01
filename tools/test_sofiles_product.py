@@ -23,12 +23,11 @@ def main():
     (build.LOG/'product-tests.json').write_text(run.stdout,encoding='utf-8')
     if run.returncode: raise RuntimeError(run.stdout + run.stderr)
     checks = json.loads(run.stdout)
-    extracted = build.ROOT / 'analysis/product-test-fixtures' / ('setup-' + uuid.uuid4().hex)
-    subprocess.run([report['setup'],'--extract-payload',str(extracted)],check=True,timeout=30)
-    for name, digest in report['files'].items():
-        assert build.native.base.sha((extracted/name).read_bytes()) == digest, name
-    summary = {'checks_passed': len(checks), 'setup_embedded_files_verified': len(report['files']),
-               'native_files_verified':len(native_names), 'installed':False, 'fixture':str(extracted)}
+    if report.get('installer_type')=='NSIS 3.13':
+        subprocess.run([sys.executable,str(build.ROOT/'tools/test_sofiles_installer.py')],check=True,timeout=400)
+    summary = {'checks_passed': len(checks), 'package_files_verified': len(report['files']),
+               'native_files_verified':len(native_names), 'real_user_install':False,
+               'installer_tests':str(build.LOG/'installer-tests.json')}
     (build.LOG/'test-summary.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
     print(json.dumps(summary))
 

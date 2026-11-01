@@ -74,9 +74,7 @@ def main():
             resources = native.update_resources(target, original)
             changes = native.add_native_branding(target, entry, fixups)
             records.append({"original_name": original, "name": target.name, "resources": resources, "native": changes})
-        native.write_docs()
-        for name in ["CREDITS.md", "README.md", "docs/credits.html", "docs/help.html"]:
-            file = OUT / name; file.write_text(file.read_text(encoding="utf-8").replace("1.0.0", VERSION), encoding="utf-8")
+        (OUT/'CREDITS.md').write_text('# Sofiles\n\nTools: Sofiles contributors. Component notices: licenses/NOTICE.md.\n',encoding='utf-8')
         native_report.write_text(json.dumps({"version": VERSION, "output": str(OUT), "binaries": records}, ensure_ascii=False, indent=2), encoding="utf-8")
     else:
         previous = json.loads((native_report if native_report.exists() else LOG / "native-report.json").read_text(encoding="utf-8"))
@@ -86,9 +84,12 @@ def main():
         records = previous["binaries"]
         if not native_report.exists(): native_report.write_text(json.dumps(previous,ensure_ascii=False,indent=2),encoding='utf-8')
     localization = content.build_content(OUT, VERSION)
+    if (ROOT/'LICENSE').exists(): shutil.copy2(ROOT/'LICENSE',OUT/'licenses/Sofiles-tools-MIT.txt')
+    nsis_notice=ROOT/'tools/nsis/nsis-3.13/COPYING'
+    if nsis_notice.exists(): shutil.copy2(nsis_notice,OUT/'licenses/NSIS.txt')
     (LOG / "AssemblyInfo.cs").write_text(
         'using System.Reflection;\n[assembly: AssemblyTitle("Sofiles")]\n[assembly: AssemblyProduct("Sofiles")]\n'
-        '[assembly: AssemblyCompany("Sofiane Messaoudi")]\n[assembly: AssemblyCopyright("© 2026 Sofiane Messaoudi — nouveaux outils; base tierce créditée séparément")]\n'
+        '[assembly: AssemblyCompany("Sofiles")]\n[assembly: AssemblyCopyright("Sofiles contributors. Component notices: licenses/NOTICE.md.")]\n'
         '[assembly: AssemblyVersion("' + VERSION + '.0")]\n[assembly: AssemblyFileVersion("' + VERSION + '.0")]\n', encoding="utf-8")
     config_source(LOG / "ProductConfig.cs")
     compile_cs(OUT / "SofilesSettings.exe", "Sofiles.Manager", LOG / "ProductConfig.cs", extras=[ROOT / "src/sofiles/Manager.cs"])
@@ -99,25 +100,35 @@ def main():
         '# Sofiles ' + VERSION + '\n\nLancer SofilesSettings.exe pour les langues, l’aide et les mises à jour. '
         'Le raccourci Sofiles lance ce gestionnaire avec --launch. Fermer le moteur avec son menu Quitter avant un changement de langue.\n\n'
         'Contact : ' + CONFIG['email'] + '. Don PayPal facultatif : 20 CHF. Le compte destinataire doit être confirmé dans PayPal.\n\n'
-        'Moteur : édition personnelle de Clover 3.0.406, © EJIE Technology. Les crédits et licences sont conservés. '
-        'Le nouveau gestionnaire ne corrige pas toutes les vulnérabilités du moteur ancien. '
+        'Consulter licenses/NOTICE.md pour les composants. '
+        'Les limites du moteur historique restent documentées dans les notices de cette préversion. '
         'Les rares messages natifs hors PAK restent en français.\n\n'
-        'Installation par utilisateur ; désinstallation conserve favoris et profil. Canal public de mise à jour non activé.\n', encoding='utf-8')
-    files = {str(p.relative_to(OUT)).replace('\\','/'): native.base.sha(p.read_bytes()) for p in OUT.rglob('*') if p.is_file() and p.name not in ['SHA256SUMS.txt', 'First Run']}
+        'Installation par utilisateur ; désinstallation conserve favoris et profil. Mises à jour facultatives dans les réglages.\n', encoding='utf-8')
+    files = {str(p.relative_to(OUT)).replace('\\','/'): native.base.sha(p.read_bytes()) for p in OUT.rglob('*') if p.is_file() and p.name not in ['SHA256SUMS.txt', 'First Run', 'runtime-language.json']}
     (OUT / "SHA256SUMS.txt").write_text(''.join(f'{v}  {k}\n' for k,v in sorted(files.items())), encoding='utf-8')
     payload = LOG / "payload.zip"
     with zipfile.ZipFile(payload, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(OUT.rglob('*')):
-            if path.is_file() and path.name != 'First Run': archive.write(path, str(path.relative_to(OUT)).replace('\\','/'))
+            if path.is_file() and path.name not in ['First Run','runtime-language.json']: archive.write(path, str(path.relative_to(OUT)).replace('\\','/'))
     config_source(LOG / "ProductConfig.Setup.cs", native.base.sha(payload.read_bytes()))
     setup = DIST / f'Sofiles-Setup-{VERSION}.exe'
-    compile_cs(setup, 'Sofiles.Setup', LOG / "ProductConfig.Setup.cs", payload=payload, extras=[ROOT / 'src/sofiles/Installer.cs'])
-    setup.with_suffix('.exe.config').write_text(app_config, encoding='utf-8')
+    helper = LOG / 'SofilesSetupHelper.exe'
+    compile_cs(helper,'Sofiles.SetupHelper',LOG/'ProductConfig.cs',console=True,extras=[ROOT/'src/sofiles/SetupHelper.cs'])
+    install_manifest = LOG/'install-files.txt'
+    install_manifest.write_text(''.join('versions/'+VERSION+'/'+name+'\n' for name in sorted(files))+'versions/'+VERSION+'/SHA256SUMS.txt\n',encoding='utf-8')
+    compiler = ROOT/'tools/nsis/nsis-3.13/makensis.exe'
+    if not compiler.exists(): raise RuntimeError('NSIS 3.13 portable compiler required: tools/nsis/nsis-3.13/makensis.exe')
+    command = [str(compiler),'/INPUTCHARSET','UTF8','/V3','/DPRODUCT_VERSION='+VERSION,'/DOUTPUT_EXE='+str(setup),'/DPAYLOAD_DIR='+str(OUT),
+               '/DPRODUCT_ICON='+str(ROOT/'assets/sofiles/sofiles.ico'),'/DSETUP_HELPER='+str(helper),
+               '/DINSTALL_MANIFEST='+str(install_manifest),str(ROOT/'installer/Sofiles.nsi')]
+    compiled = subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace')
+    (LOG/'nsis-compile.log').write_text(compiled.stdout+compiled.stderr,encoding='utf-8')
+    if compiled.returncode: raise RuntimeError(compiled.stdout+compiled.stderr)
     result = {"version": VERSION, "output": str(OUT), "setup": str(setup), "setup_sha256": native.base.sha(setup.read_bytes()),
               "payload_sha256": native.base.sha(payload.read_bytes()), "files": files, "languages": ["fr","en","de"],
               "binaries": records, "manifest_sha256": files,
               "updates_configured": bool(CONFIG['manifest_url'] and CONFIG['update_public_key_xml']),
-              "installed_by_builder": False, "publicly_redistributed": False}
+              "installer_type":"NSIS 3.13", "installed_by_builder": False, "publicly_redistributed": False}
     (LOG / 'build-report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps({k:v for k,v in result.items() if k not in ['files','binaries','manifest_sha256']}))
 

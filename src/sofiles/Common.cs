@@ -44,7 +44,11 @@ namespace Sofiles {
     public sealed class OperationLock : IDisposable {
         Mutex mutex;
         OperationLock(Mutex value) { mutex = value; }
-        public static OperationLock Acquire() {
+        public static OperationLock Acquire(bool installerHelper = false) {
+            if (!installerHelper) {
+                Mutex setup;
+                if (Mutex.TryOpenExisting(@"Local\SofilesSetup", out setup)) { setup.Dispose(); throw new IOException("SF-OPERATION-BUSY"); }
+            }
             var mutex = new Mutex(false, @"Local\Sofiles-" + WindowsIdentity.GetCurrent().User.Value);
             bool acquired;
             try { acquired = mutex.WaitOne(0); } catch (AbandonedMutexException) { acquired = true; }
@@ -74,7 +78,16 @@ namespace Sofiles {
             string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try {
                 File.WriteAllBytes(temp, bytes);
-                if (File.Exists(path)) File.Replace(temp, path, null); else File.Move(temp, path);
+                for (int attempt = 0; ; attempt++) {
+                    try {
+                        if (File.Exists(path)) File.Replace(temp, path, null); else File.Move(temp, path);
+                        break;
+                    } catch (IOException error) {
+                        int code = error.HResult & 0xffff;
+                        if (attempt >= 7 || (code != 32 && code != 33 && code != 1176)) throw new IOException("SF-WRITE: " + Path.GetFileName(path) + ": " + error.Message,error);
+                        Thread.Sleep(50 * (attempt + 1));
+                    }
+                }
             } finally { if (File.Exists(temp)) File.Delete(temp); }
         }
     }

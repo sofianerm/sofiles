@@ -26,7 +26,7 @@ OUT = ROOT / "builds/Sofiles-1.0.0"
 LOG = ROOT / "analysis/branding/full-build"
 NAMES = {"clover.exe": "Sofiles.exe", "clover.dll": "SofilesCore.dll",
          "TabHelper32.dll": "SofilesHelper32.dll", "TabHelper64.dll": "SofilesHelper64.dll"}
-COPYRIGHT = "Personnalisation © 2026 Sofiane Messaoudi. Base Clover © EJIE Technology. Voir CREDITS.md."
+COPYRIGHT = "Sofiles. Third-party notices: licenses/NOTICE.md."
 VERSION = "1.0.0"
 
 
@@ -47,10 +47,10 @@ def version_tree(node, file_name):
             struct.pack_into("<I", fixed, offset, value)
         node.value = bytes(fixed)
     values = {
-        "CompanyName": "Sofiane Messaoudi", "CompanyShortName": "Sofiane Messaoudi",
+        "CompanyName": "Sofiles", "CompanyShortName": "Sofiles",
         "ProductName": "Sofiles", "ProductShortName": "Sofiles",
         "FileDescription": "Sofiles" if file_name.endswith(".exe") else
-                           ("Sofiles — interface et onglets" if "Core" in file_name else "Sofiles — intégration à l’Explorateur"),
+                           ("Sofiles: interface et onglets" if "Core" in file_name else "Sofiles: intégration à l’Explorateur"),
         "FileVersion": VERSION + ".0", "ProductVersion": VERSION,
         "InternalName": Path(file_name).stem, "OriginalFilename": file_name,
         "LegalCopyright": COPYRIGHT,

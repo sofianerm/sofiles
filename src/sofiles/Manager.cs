@@ -11,6 +11,9 @@ namespace Sofiles {
             Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
             try {
                 var preferences = Preferences.Load(); I18n.Language = preferences.Language;
+                if (args.Length == 3 && args[0] == "--apply-language") {
+                    Pak.Apply(Path.GetFullPath(args[1]), args[2]); return 0;
+                }
                 if (args.Length == 2 && args[0] == "--remove") {
                     InstallOps.Remove(Int32.Parse(args[1]));
                     MessageBox.Show(I18n.T("Sofiles a été désinstallé. Tes favoris et réglages sont conservés.", "Sofiles was uninstalled. Your favourites and settings were kept.", "Sofiles wurde deinstalliert. Favoriten und Einstellungen bleiben erhalten."), "Sofiles"); return 0;
@@ -89,12 +92,12 @@ namespace Sofiles {
             updates.Controls.Add(LabelText(I18n.T("Chaque téléchargement est contrôlé par signature et empreinte SHA-256. Tu choisis quand installer ; l’ancienne version est conservée.", "Downloads are checked using a signature and SHA-256 hash. You choose when to install; the previous version is kept.", "Downloads werden mit Signatur und SHA-256-Prüfsumme geprüft. Du bestimmst den Installationszeitpunkt; die vorherige Version bleibt erhalten.")));
             updates.Controls.Add(Action(I18n.T("Historique des versions", "Version history", "Versionsverlauf"), delegate { Product.Open(Path.Combine(Paths.Here,"docs",preferences.Language,"changelog.html")); }));
             var help = Page(tabs, I18n.T("Aide et crédits", "Help and credits", "Hilfe und Danksagungen"));
-            help.Controls.Add(LabelText("Sofiles " + ProductConfig.Version + "\nSofiane Messaoudi\n" + ProductConfig.Email));
+            help.Controls.Add(LabelText("Sofiles " + ProductConfig.Version + "\n" + ProductConfig.Email));
             help.Controls.Add(Action(I18n.T("&Ouvrir l’aide", "&Open help", "Hilfe &öffnen"), delegate { Product.Open(Product.Help(Paths.Here, preferences.Language)); }));
-            help.Controls.Add(Action(I18n.T("&Contacter Sofiane", "&Contact Sofiane", "Sofiane &kontaktieren"), delegate { Product.Contact(); }));
-            help.Controls.Add(Action(I18n.T("Don facultatif — 20 CHF", "Optional donation — CHF 20", "Freiwillige Spende — 20 CHF"), delegate { Product.Open(ProductConfig.DonationUrl); }));
+            help.Controls.Add(Action(I18n.T("&Contacter le support", "&Contact support", "Support &kontaktieren"), delegate { Product.Contact(); }));
+            help.Controls.Add(Action(I18n.T("Don facultatif : 20 CHF", "Optional donation: CHF 20", "Freiwillige Spende: 20 CHF"), delegate { Product.Open(ProductConfig.DonationUrl); }));
             help.Controls.Add(Action(I18n.T("Crédits et licences", "Credits and licences", "Danksagungen und Lizenzen"), delegate { Product.Open(Path.Combine(Paths.Here,"docs",preferences.Language,"credits.html")); }));
-            help.Controls.Add(LabelText(I18n.T("© 2026 Sofiane Messaoudi : personnalisation. Base Clover © EJIE Technology ; composants Chromium et tiers. L’Explorateur classique est requis pour la configuration essayée.", "© 2026 Sofiane Messaoudi: customisation. Clover base © EJIE Technology; Chromium and third-party components. The tested configuration requires classic Explorer.", "© 2026 Sofiane Messaoudi: Anpassungen. Clover-Basis © EJIE Technology; Chromium und weitere Komponenten. Die getestete Konfiguration benötigt den klassischen Explorer.")));
+            help.Controls.Add(LabelText(I18n.T("Onglets et favoris pour l’Explorateur Windows. Cette version utilise l’Explorateur classique. Les notices des composants sont incluses dans le dossier licences.", "Tabs and bookmarks for Windows File Explorer. This version uses classic Explorer. Component notices are included in the licences folder.", "Tabs und Lesezeichen für den Windows-Explorer. Diese Version verwendet den klassischen Explorer. Komponentenhinweise stehen im Lizenzordner.")));
             var footer = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight };
             footer.Controls.Add(Action(I18n.T("&Lancer Sofiles", "&Launch Sofiles", "Sofiles &starten"), delegate { try { Manager.Launch(preferences); } catch (Exception e) { MessageBox.Show(Manager.Error(e), "Sofiles"); } }));
             footer.Controls.Add(Action(I18n.T("&Fermer", "&Close", "S&chließen"), delegate { Close(); })); main.Controls.Add(footer); Controls.Add(main);

@@ -1,11 +1,11 @@
 {
-  "version": "1.1.0",
-  "author": "Sofiane Messaoudi",
+  "version": "1.2.0",
+  "author": "Sofiles contributors",
   "email": "so.messaoudi@gmail.com",
   "donation_amount": "20.00",
   "donation_currency": "CHF",
   "donation_url": "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=so.messaoudi%40gmail.com&item_name=Sofiles&amount=20.00&currency_code=CHF",
-  "releases_url": "",
-  "manifest_url": "",
+  "releases_url": "https://github.com/sofianerm/sofiles/releases",
+  "manifest_url": "https://raw.githubusercontent.com/sofianerm/sofiles/main/updates/latest.xml",
   "update_public_key_xml": "<RSAKeyValue><Modulus>xqlUp4tMnTjkMknLGfKIHV8VexoxYKclLBkswRL1AjgqBeBK4Bg5qNQ5a7Ya41x/fprppOgBG1oBqLgKOdNGzV33Ug+oz5JwG/SmvZxxB/hUF734YHlRttcXv7BS2bIxHYGYGLGhcU1Ur6Rf2aoenhgHcziYZJ5X5rjYIGjPESyPmoP7q0Mfwqepinr1usB2D408nApTqSC39LQ8TRTFNVadHlEnfRCA0LiqCUlaaA2aaR+lN63h+8eQHSCZu1GEcEtng8WqZ86N5tjHZUHqh1tqWfJSBYVZPFhCO5uJWsU1QsB/6sI17FEucui2cVYe/iFmaY7kSJQkbGjDAlbYd5ZUhTgcKmFDz5W5Rx3ZlLdavBZr5mr9UKrVqiHHnmT5ex+ShnvRcvZdmcdNpCiXrIAdZcWm0CwbsU7d35979mqpPN0wnrzzmN164VZTNCeaJGr69flLN42yZPFzeGX19MzvNLDqdgdB0mQCAMR56J2Y36y6/cVfPfqslYS2Y6WZ</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>"
 }

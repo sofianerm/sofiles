@@ -1,63 +1,27 @@
-# Publier une mise à jour Sofiles
+# Mises à jour
 
-Le dépôt de travail est privé. Il sauvegarde les nouveaux outils ; il n’est pas encore un canal de téléchargement pour l’application. Les binaires Clover modifiés restent locaux compte tenu de la licence fournie et des problèmes de sécurité encore ouverts.
+Le client consulte le manifeste signé `https://raw.githubusercontent.com/sofianerm/sofiles/main/updates/latest.xml`.
 
-## Ce que l’utilisateur verra
+La vérification automatique est désactivée par défaut. L’utilisateur peut l’activer dans les réglages ; Sofiles vérifie alors au lancement, au maximum une fois par jour. Une nouvelle version affiche ses changements avant de proposer le téléchargement et l’ouverture du setup.
 
-Dans les réglages, l’utilisateur peut demander une vérification et, une fois un canal publié, activer une vérification au lancement, au maximum une fois par jour. Une nouvelle version affiche son numéro et ses changements. L’utilisateur accepte le téléchargement puis l’ouverture de l’installateur. Le setup lui demande de fermer Sofiles. L’installation ajoute un nouveau dossier de version et conserve le précédent.
+## Publier une version
 
-La langue, les favoris et le profil sont conservés. Les erreurs de réseau ne forcent pas de mise à jour et ne téléchargent pas un programme alternatif. Les mises à jour antérieures ou égales sont ignorées.
+1. Modifier la version dans `config/product.json` et les notes FR/EN/DE.
+2. Construire avec `python tools/build_sofiles_product.py` et lancer `python tools/test_sofiles_product.py`.
+3. Vérifier l’assistant et le démarrage, puis créer une release GitHub en brouillon avec le tag de version.
+4. Téléverser le setup avec un nom contenant sa version. Ne pas remplacer les octets d’un fichier déjà publié.
+5. Utiliser `tools/sign_sofiles_release.ps1` avec le setup, son URL définitive et le fichier de notes pour créer `updates.xml` et `updates.xml.sig`.
+6. Publier la release. Copier le manifeste et sa signature dans `updates/latest.xml` et `updates/latest.xml.sig`, puis pousser le commit.
+7. Vérifier les téléchargements sans authentification, leur empreinte et la réponse du client depuis la version précédente.
 
-## Hébergement
+La première distribution publique est une préversion de test. Le champ de canal du manifeste reste `stable`, l’identifiant vérifié par ce client. Ce nom ne constitue pas une validation de stabilité du moteur.
 
-Un hébergement HTTPS statique suffit. GitHub Releases peut héberger des fichiers joints ; un serveur exécutant une API n’est pas obligatoire. Pour une application accessible à tous, les fichiers doivent être téléchargeables sans secret embarqué dans le client. Un dépôt privé exige une authentification et ne répond pas à cette contrainte.
+## Signature et installation
 
-Lorsque la distribution des binaires sera autorisée et la version prête à être diffusée, choisir un emplacement public pour :
+La clé publique est compilée dans le client. La clé privée reste protégée par DPAPI dans `.private/`, hors de Git. Elle ne doit jamais figurer dans une release. Sauvegarder sa capacité de signature avant une migration de PC et ne pas régénérer la clé à chaque version.
 
-- `updates.xml` ;
-- `updates.xml.sig`, signature détachée du manifeste ;
-- `Sofiles-Setup-X.Y.Z.exe`, fichier de version immuable.
+Le manifeste utilise RSA de 3072 bits et SHA-256. Le client refuse les DTD et les téléchargements sans HTTPS. Il contrôle la signature, la taille et l’empreinte du setup, puis refait le contrôle sous verrou avant son ouverture. Cette signature est distincte d’Authenticode et ne supprime pas les avertissements Windows liés à l’absence de certificat de publication.
 
-GitHub documente les [liens directs vers les fichiers d’une release](https://github.com/github/docs/blob/main/content/repositories/releasing-projects-on-github/linking-to-releases.md).
+NSIS installe pour le compte courant et inscrit Sofiles dans les applications Windows. Les versions sont rangées sous `versions/`. L’inventaire est écrit avant la copie pour permettre une réparation après interruption. La désinstallation supprime les fichiers de cet inventaire et conserve les fichiers inconnus, les préférences et les favoris.
 
-## Clés et configuration initiale
-
-La clé publique est compilée dans le client. La clé privée ne doit jamais être ajoutée au dépôt, à une release ou au setup. Le dossier `.private/` est exclu de Git. La clé actuelle est protégée avec DPAPI pour le compte Windows qui l’a créée : sauvegarder de manière sûre sa capacité de signature avant toute publication ; la simple copie du fichier chiffré ne garantit pas sa récupération sur un autre PC.
-
-Si aucune clé n’existe encore :
-
-```powershell
-.\tools\new_sofiles_signing_key.ps1
-```
-
-Renseigner ensuite `manifest_url` et `releases_url` dans `config/product.json`. La clé publique du même fichier doit correspondre à la clé privée de signature. Reconstruire le client initial après cette configuration : une application déjà distribuée avec un canal vide ne découvrira pas spontanément une nouvelle adresse.
-
-Une rotation de clé nécessite un plan de migration et une version du client qui connaît la nouvelle clé. Ne pas régénérer une clé pour une simple montée de version.
-
-## Chaque nouvelle version
-
-1. Monter `version` dans `config/product.json` : correctif `1.1.1`, nouvelle fonction compatible `1.2.0`, changement incompatible `2.0.0`.
-2. Mettre à jour les notes FR/EN/DE dans un fichier JSON ayant les propriétés `fr`, `en`, `de`.
-3. Construire et tester le setup localement. Ne pas écraser un fichier de release déjà publié.
-4. Signer le manifeste avec l’URL définitive du setup :
-
-```powershell
-.\tools\sign_sofiles_release.ps1 `
-  -Setup .\dist\Sofiles-Setup-1.2.0.exe `
-  -DownloadUrl 'https://HEBERGEMENT-A-CHOISIR/Sofiles-Setup-1.2.0.exe' `
-  -NotesJson .\release-notes\1.2.0.json `
-  -Output .\dist\1.2.0\updates.xml
-```
-
-L’URL ci-dessus est un exemple à remplacer, pas un service existant.
-
-5. Téléverser d’abord le setup, puis `updates.xml.sig` et enfin `updates.xml`. Les fichiers sont vérifiés ensemble : une publication momentanément incohérente produit une erreur de vérification, jamais une installation sans signature.
-6. Depuis la version précédente, vérifier la notification, les notes, le téléchargement, le refus d’un fichier modifié et l’installation après fermeture du moteur.
-
-## Contrôles et limites
-
-Le manifeste est signé avec RSA de 3072 bits ou plus et SHA-256, sur ses octets exacts. Le XML refuse les DTD. La vérification exige le produit Sofiles, le canal stable et une version supérieure. Le téléchargement accepte HTTPS uniquement, y compris les redirections, avec des limites de temps et de taille. L’empreinte et la taille du setup sont vérifiées, puis revérifiées sous verrou immédiatement avant exécution.
-
-Le setup s’exécute sans élévation et déploie dans `%LOCALAPPDATA%\Programs\Sofiles`. Une exclusion par mutex protège les transitions effectuées par les nouveaux outils. Un lancement direct de l’ancien moteur peut contourner ce mécanisme ; les courses entre processus malveillants du même compte ne sont pas entièrement éliminées par des contrôles de chemin en espace utilisateur.
-
-La compensation traite les erreurs remontées pendant l’installation. Une coupure de courant à une étape précise n’équivaut pas à une exception gérée ; la résistance à toutes les coupures n’est pas validée. Le retour à une ancienne version reste manuel par son gestionnaire conservé : aucun bouton de restauration automatique n’est promis.
+Les tests automatiques du setup utilisent des dossiers isolés du projet et ne modifient pas le registre ni le profil réels. Un essai distinct a validé l’intégration Windows sur le compte courant. Ces essais ne couvrent pas toutes les configurations ni les interruptions possibles. Voir [SECURITY.md](../SECURITY.md) pour les limites du moteur.

@@ -31,7 +31,7 @@ namespace Sofiles {
             try {
                 dynamic d = shell; link = d.CreateShortcut(path); dynamic s = link;
                 s.TargetPath = target; s.Arguments = arguments; s.WorkingDirectory = Path.GetDirectoryName(target);
-                s.IconLocation = icon; s.Description = "Sofiles — Sofiane Messaoudi"; s.Save();
+                s.IconLocation = icon; s.Description = "Sofiles"; s.Save();
             } finally { if (link != null) Marshal.FinalReleaseComObject(link); Marshal.FinalReleaseComObject(shell); }
         }
         public static void DeleteOwnedFiles(string root, IEnumerable<string> relativeFiles) {
@@ -94,7 +94,7 @@ namespace Sofiles {
                 Json.Write(recordPath, record);
                 using (var key = Registry.CurrentUser.CreateSubKey(RegistryKey)) {
                     key.SetValue("DisplayName", "Sofiles"); key.SetValue("DisplayVersion", ProductConfig.Version);
-                    key.SetValue("Publisher", "Sofiane Messaoudi (personnalisation)"); key.SetValue("InstallLocation", root);
+                    key.SetValue("Publisher", "Sofiles"); key.SetValue("InstallLocation", root);
                     key.SetValue("DisplayIcon", Path.Combine(final, "Sofiles.exe"));
                     key.SetValue("UninstallString", "\"" + uninstall + "\" --uninstall");
                     key.SetValue("HelpLink", "mailto:" + ProductConfig.Email); key.SetValue("NoModify", 1); key.SetValue("NoRepair", 1);

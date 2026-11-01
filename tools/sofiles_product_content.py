@@ -12,7 +12,6 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import shutil
 import struct
 from urllib.parse import urlsplit, unquote
 
@@ -30,7 +29,8 @@ URI_MARKERS = {
     11333: "SOFILES_RELEASES_URI",
 }
 LANGUAGE_SOURCES = {"fr": "fr", "en": "en-US", "de": "de"}
-PROVENANCE_IDS = {10012, 10013, 10014}
+PROVENANCE_IDS: set[int] = set()
+LEGACY_IDENTITY = re.compile(r"Clover|E[N]?JIE|Sofiane\s*Messaoudi", re.IGNORECASE)
 
 
 def _sha(data: bytes) -> str:
@@ -78,10 +78,10 @@ EN_OVERRIDES = {
     10003: "Sofiles, your tabbed file manager.",
     10005: "Instant search",
     10007: "Sofiles did not close correctly. Click Restore to reopen your previous tabs.",
-    10011: "Sofiane Messaoudi",
-    10012: "Sofiles modifications © 2026 Sofiane Messaoudi. Clover base © 2014 EJIE Technology. Third-party credits retained.",
-    10013: "Sofiles is customised by BEGIN_LINK_CHRSofiane MessaoudiEND_LINK_CHR, based on Clover by EJIE Technology. Optional donation: BEGIN_LINK_OSS20 CHF through PayPalEND_LINK_OSS. Original and Chromium credits are retained.",
-    10014: "Sofiles is a personal edition of <a target=\"_blank\" href=\"$1\">Clover</a>, created by <a target=\"_blank\" href=\"$2\">EJIE Technology</a>. Modifications: Sofiane Messaoudi. Chromium and third-party credits are retained.",
+    10011: "Sofiles",
+    10012: "Sofiles tools and interface © 2026 Sofiles contributors. Licences and notices retained.",
+    10013: "BEGIN_LINK_CHRSofiles helpEND_LINK_CHR · BEGIN_LINK_OSSOptional 20 CHF donationEND_LINK_OSS",
+    10014: "<a target=\"_blank\" href=\"$1\">Sofiles help</a> · <a target=\"_blank\" href=\"$2\">Licences and notices</a>",
     10015: "Reserved Sofiles resource. Expected argument: $1.",
     10016: "Reserved Sofiles resource.",
     10017: "Reserved Sofiles resource.",
@@ -99,7 +99,7 @@ EN_OVERRIDES = {
     10073: "This feature opens the application associated with telephone links.",
     10075: "Do not show this message again",
     11133: "Send to a mobile device",
-    11246: "Tabbed file manager customised by Sofiane Messaoudi",
+    11246: "Tabbed file manager",
     11331: "Optional donation: 20 CHF through PayPal",
 }
 
@@ -113,13 +113,13 @@ DE_OVERRIDES = {
     10005: "Sofortsuche",
     10006: "Sofiles stellt Ihre letzte Sitzung beim Start wieder her. Einige sitzungsbezogene Einstellungen, etwa das Löschen von Daten beim Beenden, werden dabei deaktiviert.",
     10007: "Sofiles wurde nicht ordnungsgemäß beendet. Klicken Sie auf „Wiederherstellen“, um Ihre letzten Tabs erneut zu öffnen.",
-    10008: "$1 — Sofiles",
+    10008: "$1 · Sofiles",
     10009: "$1",
     10010: "Hilfe zu Sofiles",
-    10011: "Sofiane Messaoudi",
-    10012: "Sofiles-Anpassungen © 2026 Sofiane Messaoudi. Clover-Basis © 2014 EJIE Technology. Hinweise zu Drittanbietern bleiben erhalten.",
-    10013: "Sofiles wurde von BEGIN_LINK_CHRSofiane MessaoudiEND_LINK_CHR angepasst und basiert auf Clover von EJIE Technology. Freiwillige Spende: BEGIN_LINK_OSS20 CHF über PayPalEND_LINK_OSS. Die ursprünglichen Hinweise und Chromium-Credits bleiben erhalten.",
-    10014: "Sofiles ist eine persönliche Anpassung von <a target=\"_blank\" href=\"$1\">Clover</a>, entwickelt von <a target=\"_blank\" href=\"$2\">EJIE Technology</a>. Anpassungen: Sofiane Messaoudi. Hinweise zu Chromium und Drittanbietern bleiben erhalten.",
+    10011: "Sofiles",
+    10012: "Sofiles-Werkzeuge und Oberfläche © 2026 Sofiles contributors. Lizenzen und Hinweise bleiben erhalten.",
+    10013: "BEGIN_LINK_CHRSofiles-HilfeEND_LINK_CHR · BEGIN_LINK_OSSFreiwillige Spende von 20 CHFEND_LINK_OSS",
+    10014: "<a target=\"_blank\" href=\"$1\">Sofiles-Hilfe</a> · <a target=\"_blank\" href=\"$2\">Lizenzen und Hinweise</a>",
     10015: "Reservierte Sofiles-Ressource. Erwartetes Argument: $1.",
     10016: "Reservierte Sofiles-Ressource.",
     10017: "Reservierte Sofiles-Ressource.",
@@ -198,7 +198,7 @@ DE_OVERRIDES = {
     10090: "&Sofiles aktualisieren",
     11028: "An die Startseite anheften",
     11133: "An ein Mobilgerät senden",
-    11246: "Dateimanager mit Tabs, angepasst von Sofiane Messaoudi",
+    11246: "Dateimanager mit Tabs",
     11325: "Ordner mit einem Mausradklick in einem neuen Tab öffnen",
     11326: "Mit einem Doppelklick auf eine freie Fläche zum übergeordneten Ordner wechseln",
     11327: "Tab durch Doppelklick auf seinen Titel schließen",
@@ -211,10 +211,11 @@ def _overrides(language: str) -> dict[int, str]:
     if language == "fr":
         path = ROOT / "analysis/branding/full-locales/fr-overrides.json"
         changes = {int(k): v for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
-        changes[10013] = ("Sofiles est personnalisé par BEGIN_LINK_CHRSofiane MessaoudiEND_LINK_CHR, "
-                          "à partir de Clover d'EJIE Technology. Don facultatif : "
-                          "BEGIN_LINK_OSS20 CHF via PayPalEND_LINK_OSS. "
-                          "Les crédits d'origine et Chromium sont conservés.")
+        changes[10011] = "Sofiles"
+        changes[10012] = "Outils et interface Sofiles © 2026 Sofiles contributors. Licences et notices conservées."
+        changes[10013] = "BEGIN_LINK_CHRAide SofilesEND_LINK_CHR · BEGIN_LINK_OSSDon facultatif de 20 CHFEND_LINK_OSS"
+        changes[10014] = '<a target="_blank" href="$1">Aide Sofiles</a> · <a target="_blank" href="$2">Licences et notices</a>'
+        changes[11246] = "Gestionnaire de fichiers à onglets"
         changes[11331] = "Don facultatif : 20 CHF via PayPal"
         return changes
     return EN_OVERRIDES if language == "en" else DE_OVERRIDES
@@ -234,78 +235,84 @@ def _localised_pack(original: dict[int, bytes], language: str) -> dict[int, byte
         if rid < 9500:
             continue
         before = raw.decode("utf-8")
-        after = changes.get(rid, before if rid in PROVENANCE_IDS
-                            else before.replace("Clover", "Sofiles"))
-        if _placeholders(after) != _placeholders(before):
+        after = changes.get(rid, before.replace("Clover", "Sofiles"))
+        after = after.replace("\u2014", ":").replace("\u2013", "-")
+        if rid == 11168:
+            # The retired native updater's error argument is intentionally unused.
+            after = {"fr": "Les mises à jour se gèrent dans les réglages Sofiles.",
+                     "en": "Manage updates in Sofiles settings.",
+                     "de": "Updates werden in den Sofiles-Einstellungen verwaltet."}[language]
+        if rid != 11168 and _placeholders(after) != _placeholders(before):
             raise ValueError(f"Placeholder mismatch in {language}/{rid}")
-        if rid not in PROVENANCE_IDS and "Clover" in after:
-            raise ValueError(f"Unreplaced visible branding in {language}/{rid}")
         result[rid] = after.encode("utf-8")
     for rid, marker in URI_MARKERS.items():
         result[rid] = marker.encode("ascii")
     result[11334] = b""
+    for rid, payload in result.items():
+        if LEGACY_IDENTITY.search(payload.decode("utf-8")):
+            raise ValueError(f"Legacy or personal identity in {language}/{rid}")
     return result
 
 
 COPY = {
     "fr": {
-        "language": "Français", "help": "Aide", "credits": "Crédits", "changelog": "Versions", "support": "Contact et soutien",
-        "intro": "Sofiles est l'édition personnelle de Sofiane Messaoudi, basée sur Clover d'EJIE Technology.",
+        "language": "Français", "help": "Aide", "credits": "À propos", "changelog": "Versions", "support": "Contact et soutien",
+        "intro": "Sofiles ajoute des onglets et une barre de favoris à vos dossiers Windows.",
         "help_title": "Bien démarrer avec Sofiles",
         "help_body": "<h2>Onglets et favoris</h2><p>Utilisez les onglets pour garder plusieurs dossiers ouverts. Le menu des onglets permet de les fermer, de les épingler et de rouvrir un onglet fermé. La barre de favoris donne accès à vos dossiers enregistrés.</p><h2>Langue</h2><p>Choisissez Français, English ou Deutsch dans le gestionnaire Sofiles, puis relancez Sofiles pour appliquer la langue. Les fenêtres affichées par Windows suivent les paramètres de Windows.</p><h2>Explorateur classique</h2><p>La base historique de Sofiles peut nécessiter l'interface classique de l'Explorateur. Le fonctionnement avec l'interface moderne de Windows 11 n'est pas garanti. La personnalisation ne change pas automatiquement ce réglage Windows.</p>",
-        "contact_label": "Écrire à Sofiane Messaoudi",
+        "contact_label": "Contacter Sofiles",
         "contact_note": "Décrivez le problème, la version de Sofiles et celle de Windows. Joignez une capture si elle est utile, en masquant vos données personnelles. Aucun rapport n'est envoyé automatiquement par ces pages.",
         "donate_title": "Soutien facultatif",
-        "donate_note": "Vous pouvez soutenir la personnalisation de Sofiles par un don suggéré de 20 CHF via PayPal. Le don est entièrement facultatif et n'est pas nécessaire pour utiliser l'application. Il n'achète aucune fonction ni garantie de support.",
-        "paypal_note": "Le lien propose so.messaoudi@gmail.com comme compte bénéficiaire. Cette adresse PayPal doit être confirmée par Sofiane Messaoudi avant diffusion. Vérifiez le bénéficiaire et le montant dans PayPal avant de confirmer quoi que ce soit.",
-        "donate_button": "Ouvrir PayPal — don facultatif de 20 CHF",
+        "donate_note": "Vous pouvez soutenir Sofiles par un don de 20 CHF via PayPal. L'application reste utilisable sans don. Celui-ci n'achète aucune fonction ni garantie de support.",
+        "paypal_note": "Le lien propose so.messaoudi@gmail.com comme bénéficiaire. Ce compte PayPal reste à confirmer avant diffusion. Vérifiez le bénéficiaire et le montant dans PayPal avant de payer.",
+        "donate_button": "Ouvrir PayPal pour un don facultatif de 20 CHF",
         "payment_note": "Ouvrir ce lien ne confirme aucun paiement. Vous choisissez ensuite si vous souhaitez continuer dans PayPal.",
-        "credit_title": "Crédits et provenance",
-        "credit_body": "<p><strong>Personnalisation Sofiles :</strong> © 2026 Sofiane Messaoudi. Ce crédit couvre les modifications personnelles, l'identité visuelle, les contenus et les outils ajoutés pour Sofiles.</p><p><strong>Base d'origine :</strong> Clover, © 2014 EJIE Technology / EJIE Soft Studio. Sofiane Messaoudi ne revendique pas la création du code Clover d'origine.</p><p><strong>Composants tiers :</strong> Chromium et leurs auteurs respectifs. Leurs crédits et droits restent reconnus ; le changement de nom ne transfère pas leur propriété.</p>",
-        "license": "Lire la licence Clover d'origine (conservée sans modification)",
+        "credit_title": "À propos de Sofiles",
+        "credit_body": "<p>Sofiles est un gestionnaire de fichiers à onglets pour Windows. Il propose une barre de favoris et une interface en français, anglais ou allemand.</p><p>Outils, interface et documentation Sofiles : © 2026 Sofiles contributors. La portée de ce crédit et les droits des composants fournis sont détaillés dans les licences et notices.</p>",
+        "license": "Licences et notices",
         "changes_title": "Historique des versions",
-        "changes_body": "<h2>{version}</h2><ul><li>Ressources d'interface en français, anglais et allemand.</li><li>Aide, crédits, historique et contact disponibles localement.</li><li>Contact Sofiles et soutien PayPal facultatif de 20 CHF.</li></ul><h2>1.0.0 — édition personnelle initiale</h2><p>Identité Sofiles et attribution des modifications à Sofiane Messaoudi, avec conservation de la provenance Clover.</p>",
-        "limit": "Ces changements ne constituent ni une réécriture du moteur d'origine, ni une garantie de sécurité ou de compatibilité. Certaines fenêtres natives héritées peuvent conserver leur propre langue. Les anciens libellés de mise à jour ne prouvent pas l'existence d'un service de mise à jour Sofiles.",
+        "changes_body": "<h2>{version}</h2><ul><li>Nouvel assistant d'installation basé sur NSIS 3.13.</li><li>Versions publiques distribuées sur GitHub Releases.</li><li>Interface et aide en français, anglais et allemand.</li><li>Identité Sofiles dans les écrans ; licences et notices regroupées dans un dossier dédié.</li></ul><h2>1.1.0</h2><p>Gestion des langues, aide locale et contact Sofiles. Ajout d'un don PayPal facultatif de 20 CHF.</p><h2>1.0.0</h2><p>Première édition Sofiles avec onglets et favoris.</p>",
+        "limit": "Les fenêtres fournies par Windows peuvent suivre une autre langue que Sofiles. Consultez l'aide pour les réglages de compatibilité.",
         "local": "Documentation locale", "version": "Version", "license_missing": "La licence originale est conservée dans le dossier de l'application.",
     },
     "en": {
-        "language": "English", "help": "Help", "credits": "Credits", "changelog": "Versions", "support": "Contact and support",
-        "intro": "Sofiles is Sofiane Messaoudi's personal edition, based on Clover by EJIE Technology.",
+        "language": "English", "help": "Help", "credits": "About", "changelog": "Versions", "support": "Contact and support",
+        "intro": "Sofiles adds tabs and a bookmarks bar to your Windows folders.",
         "help_title": "Getting started with Sofiles",
         "help_body": "<h2>Tabs and bookmarks</h2><p>Use tabs to keep several folders open. The tab menu lets you close or pin tabs and reopen a closed tab. The bookmarks bar gives you access to saved folders.</p><h2>Language</h2><p>Select Français, English or Deutsch in the Sofiles manager, then relaunch Sofiles to apply the language. Windows dialogs follow your Windows language settings.</p><h2>Classic Explorer</h2><p>The historical Sofiles base may require the classic File Explorer interface. Compatibility with the modern Windows 11 interface is not guaranteed. This personal edition does not automatically change that Windows setting.</p>",
-        "contact_label": "Email Sofiane Messaoudi",
+        "contact_label": "Contact Sofiles",
         "contact_note": "Describe the issue and include your Sofiles and Windows versions. Add a screenshot if useful, after hiding personal information. These pages do not automatically send any report.",
         "donate_title": "Optional support",
-        "donate_note": "You may support the Sofiles personal edition with a suggested donation of 20 CHF through PayPal. Donating is entirely optional and is not required to use the application. It does not purchase features or guaranteed support.",
-        "paypal_note": "The link proposes so.messaoudi@gmail.com as the recipient account. Sofiane Messaoudi must confirm this PayPal address before distribution. Check the recipient and amount in PayPal before confirming anything.",
-        "donate_button": "Open PayPal — optional 20 CHF donation",
+        "donate_note": "You can support Sofiles with a 20 CHF donation through PayPal. You can use the application without donating. A donation does not purchase features or guaranteed support.",
+        "paypal_note": "The link proposes so.messaoudi@gmail.com as the recipient. This PayPal account still needs confirmation before distribution. Check the recipient and amount in PayPal before paying.",
+        "donate_button": "Open PayPal for an optional 20 CHF donation",
         "payment_note": "Opening this link does not confirm a payment. You then decide whether to continue in PayPal.",
-        "credit_title": "Credits and provenance",
-        "credit_body": "<p><strong>Sofiles modifications:</strong> © 2026 Sofiane Messaoudi. This credit covers the personal modifications, visual identity, content and tools added for Sofiles.</p><p><strong>Original base:</strong> Clover, © 2014 EJIE Technology / EJIE Soft Studio. Sofiane Messaoudi does not claim authorship of the original Clover code.</p><p><strong>Third-party components:</strong> Chromium and their respective authors. Their credits and rights remain acknowledged; rebranding does not transfer ownership.</p>",
-        "license": "Read the original Clover licence (preserved unchanged)",
+        "credit_title": "About Sofiles",
+        "credit_body": "<p>Sofiles is a tabbed file manager for Windows. It includes a bookmarks bar and an interface in French, English or German.</p><p>Sofiles tools, interface and documentation: © 2026 Sofiles contributors. The scope of this credit and the rights covering the supplied components are detailed in the licences and notices.</p>",
+        "license": "Licences and notices",
         "changes_title": "Version history",
-        "changes_body": "<h2>{version}</h2><ul><li>Interface resources in French, English and German.</li><li>Local help, credits, version history and contact pages.</li><li>Sofiles contact and an optional 20 CHF PayPal donation.</li></ul><h2>1.0.0 — initial personal edition</h2><p>Sofiles identity and attribution of personal modifications to Sofiane Messaoudi, retaining Clover provenance.</p>",
-        "limit": "These changes do not rewrite the original engine or guarantee security or compatibility. Some inherited native dialogs may retain their own language. Legacy update labels do not establish that a Sofiles update service exists.",
+        "changes_body": "<h2>{version}</h2><ul><li>New installation wizard based on NSIS 3.13.</li><li>Public versions distributed through GitHub Releases.</li><li>Interface and help in French, English and German.</li><li>Sofiles identity throughout the screens, with licences and notices in a dedicated folder.</li></ul><h2>1.1.0</h2><p>Language selection, local help and Sofiles contact details. Added an optional 20 CHF PayPal donation.</p><h2>1.0.0</h2><p>First Sofiles edition with tabs and bookmarks.</p>",
+        "limit": "Dialogs supplied by Windows may use a different language from Sofiles. See the help page for compatibility settings.",
         "local": "Local documentation", "version": "Version", "license_missing": "The original licence is retained in the application folder.",
     },
     "de": {
-        "language": "Deutsch", "help": "Hilfe", "credits": "Mitwirkende", "changelog": "Versionen", "support": "Kontakt und Unterstützung",
-        "intro": "Sofiles ist die persönliche Edition von Sofiane Messaoudi und basiert auf Clover von EJIE Technology.",
+        "language": "Deutsch", "help": "Hilfe", "credits": "Über Sofiles", "changelog": "Versionen", "support": "Kontakt und Unterstützung",
+        "intro": "Sofiles ergänzt Ihre Windows-Ordner um Tabs und eine Lesezeichenleiste.",
         "help_title": "Erste Schritte mit Sofiles",
         "help_body": "<h2>Tabs und Lesezeichen</h2><p>Mit Tabs können Sie mehrere Ordner geöffnet halten. Über das Tabmenü können Sie Tabs schließen oder anheften und geschlossene Tabs wieder öffnen. Die Lesezeichenleiste bietet Zugriff auf gespeicherte Ordner.</p><h2>Sprache</h2><p>Wählen Sie Français, English oder Deutsch im Sofiles-Manager und starten Sie Sofiles neu, um die Sprache zu übernehmen. Windows-Dialoge verwenden die Windows-Spracheinstellungen.</p><h2>Klassischer Explorer</h2><p>Die historische Sofiles-Basis benötigt möglicherweise die klassische Explorer-Oberfläche. Die Kompatibilität mit der modernen Oberfläche von Windows 11 ist nicht garantiert. Diese persönliche Edition ändert die Windows-Einstellung nicht automatisch.</p>",
-        "contact_label": "E-Mail an Sofiane Messaoudi",
+        "contact_label": "Sofiles kontaktieren",
         "contact_note": "Beschreiben Sie das Problem und nennen Sie Ihre Sofiles- und Windows-Version. Fügen Sie bei Bedarf einen Screenshot hinzu und blenden Sie persönliche Daten vorher aus. Diese Seiten versenden keine automatischen Berichte.",
         "donate_title": "Freiwillige Unterstützung",
-        "donate_note": "Sie können die persönliche Sofiles-Edition mit einer vorgeschlagenen Spende von 20 CHF über PayPal unterstützen. Eine Spende ist freiwillig und für die Nutzung der Anwendung nicht erforderlich. Sie erwerben damit weder Funktionen noch einen garantierten Support.",
-        "paypal_note": "Der Link schlägt so.messaoudi@gmail.com als Empfängerkonto vor. Sofiane Messaoudi muss diese PayPal-Adresse vor einer Weitergabe bestätigen. Prüfen Sie den Empfänger und den Betrag in PayPal, bevor Sie etwas bestätigen.",
-        "donate_button": "PayPal öffnen — freiwillige Spende von 20 CHF",
+        "donate_note": "Sie können Sofiles mit einer Spende von 20 CHF über PayPal unterstützen. Die Anwendung ist auch ohne Spende nutzbar. Eine Spende kauft keine Funktionen und keinen garantierten Support.",
+        "paypal_note": "Der Link schlägt so.messaoudi@gmail.com als Empfänger vor. Dieses PayPal-Konto muss vor der Weitergabe noch bestätigt werden. Prüfen Sie den Empfänger und den Betrag in PayPal, bevor Sie zahlen.",
+        "donate_button": "PayPal für eine freiwillige Spende von 20 CHF öffnen",
         "payment_note": "Das Öffnen dieses Links bestätigt keine Zahlung. Anschließend entscheiden Sie selbst, ob Sie in PayPal fortfahren möchten.",
-        "credit_title": "Mitwirkende und Herkunft",
-        "credit_body": "<p><strong>Sofiles-Anpassungen:</strong> © 2026 Sofiane Messaoudi. Diese Angabe bezieht sich auf die persönlichen Anpassungen, das Erscheinungsbild sowie die für Sofiles ergänzten Inhalte und Werkzeuge.</p><p><strong>Ursprüngliche Basis:</strong> Clover, © 2014 EJIE Technology / EJIE Soft Studio. Sofiane Messaoudi beansprucht nicht die Urheberschaft am ursprünglichen Clover-Code.</p><p><strong>Drittanbieter-Komponenten:</strong> Chromium und deren jeweilige Urheber. Ihre Rechte und Hinweise bleiben anerkannt; die Umbenennung überträgt kein Eigentum.</p>",
-        "license": "Ursprüngliche Clover-Lizenz lesen (unverändert erhalten)",
+        "credit_title": "Über Sofiles",
+        "credit_body": "<p>Sofiles ist ein Dateimanager mit Tabs für Windows. Er enthält eine Lesezeichenleiste und eine Oberfläche auf Französisch, Englisch oder Deutsch.</p><p>Sofiles-Werkzeuge, Oberfläche und Dokumentation: © 2026 Sofiles contributors. Der Umfang dieser Angabe und die Rechte an den mitgelieferten Komponenten sind in den Lizenzen und Hinweisen beschrieben.</p>",
+        "license": "Lizenzen und Hinweise",
         "changes_title": "Versionsverlauf",
-        "changes_body": "<h2>{version}</h2><ul><li>Oberflächenressourcen auf Französisch, Englisch und Deutsch.</li><li>Lokale Seiten für Hilfe, Mitwirkende, Versionsverlauf und Kontakt.</li><li>Sofiles-Kontakt und freiwillige PayPal-Spende von 20 CHF.</li></ul><h2>1.0.0 — erste persönliche Edition</h2><p>Sofiles-Identität und Zuordnung der persönlichen Anpassungen zu Sofiane Messaoudi unter Beibehaltung der Clover-Herkunft.</p>",
-        "limit": "Diese Änderungen schreiben die ursprüngliche Engine nicht neu und garantieren weder Sicherheit noch Kompatibilität. Einige übernommene native Dialoge können ihre eigene Sprache behalten. Alte Aktualisierungstexte belegen nicht, dass ein Sofiles-Aktualisierungsdienst existiert.",
+        "changes_body": "<h2>{version}</h2><ul><li>Neuer Installationsassistent auf Basis von NSIS 3.13.</li><li>Öffentliche Versionen werden über GitHub Releases verteilt.</li><li>Oberfläche und Hilfe auf Französisch, Englisch und Deutsch.</li><li>Sofiles-Identität in den Dialogen sowie Lizenzen und Hinweise in einem eigenen Ordner.</li></ul><h2>1.1.0</h2><p>Sprachauswahl, lokale Hilfe und Sofiles-Kontakt. Freiwillige PayPal-Spende von 20 CHF ergänzt.</p><h2>1.0.0</h2><p>Erste Sofiles-Edition mit Tabs und Lesezeichen.</p>",
+        "limit": "Windows-Dialoge können eine andere Sprache als Sofiles verwenden. Einstellungen zur Kompatibilität finden Sie in der Hilfe.",
         "local": "Lokale Dokumentation", "version": "Version", "license_missing": "Die ursprüngliche Lizenz bleibt im Anwendungsordner erhalten.",
     },
 }
@@ -323,13 +330,13 @@ def _document(language: str, page: str, version: str) -> str:
     languages = " · ".join(
         f'<a href="../{code}/{page}.html" lang="{code}" hreflang="{code}">{escape(COPY[code]["language"])}</a>'
         for code in LANGUAGE_SOURCES)
-    support = (f'<p><a href="mailto:{CONTACT}">{escape(text["contact_label"])} — {CONTACT}</a></p>'
+    support = (f'<p><a href="mailto:{CONTACT}">{escape(text["contact_label"])} : {CONTACT}</a></p>'
                f'<p>{escape(text["contact_note"])}</p>')
     if page == "help":
         title, body = text["help_title"], text["help_body"] + support
     elif page == "credits":
         title = text["credit_title"]
-        body = text["credit_body"] + f'<p><a href="../../License.txt">{escape(text["license"])}</a></p>'
+        body = text["credit_body"] + f'<p><a href="../../licenses/NOTICE.md">{escape(text["license"])}</a></p>'
     elif page == "changelog":
         title = text["changes_title"]
         body = text["changes_body"].format(version=escape(version))
@@ -343,12 +350,12 @@ def _document(language: str, page: str, version: str) -> str:
     return (f'<!doctype html>\n<html lang="{language}"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
             '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; base-uri \'none\'; form-action \'none\'">'
-            f'<title>{escape(title)} — Sofiles {escape(version)}</title><style>{STYLE}</style></head>'
+            f'<title>{escape(title)} | Sofiles {escape(version)}</title><style>{STYLE}</style></head>'
             f'<body><header><strong>Sofiles {escape(version)}</strong><p>{escape(text["intro"])}</p>'
             f'<nav aria-label="Sofiles">{nav}</nav><p>{languages}</p></header>'
             f'<main><h1>{escape(title)}</h1>{body}</main>'
             f'<footer><p>{escape(text["limit"])}</p><p>{escape(text["local"])} · '
-            f'{escape(text["version"])} {escape(version)} · © 2026 Sofiane Messaoudi</p></footer></body></html>\n')
+            f'{escape(text["version"])} {escape(version)} · © 2026 Sofiles contributors</p></footer></body></html>\n')
 
 
 class _DocumentLinks(HTMLParser):
@@ -373,7 +380,7 @@ def build_content(output: Path, version: str) -> dict:
     """
     output = Path(output).resolve()
     if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version):
-        raise ValueError("Expected a semantic version, for example 1.1.0")
+        raise ValueError("Expected a semantic version, for example 1.2.0")
     if output == SOURCE.resolve() or output.is_relative_to(SOURCE.resolve()):
         raise ValueError("The output must not overwrite the source artifacts")
     sources = sorted((SOURCE / "locales").glob("*.pak"))
@@ -389,7 +396,7 @@ def build_content(output: Path, version: str) -> dict:
     expected_ids = originals["fr"][1].keys()
     if any(pack.keys() != expected_ids for _, pack in originals.values()):
         raise ValueError("The source locale ID sets differ")
-    for folder in ["language-packs", "locale-templates", "locales", "docs"]:
+    for folder in ["language-packs", "locale-templates", "locales", "docs", "licenses"]:
         (output / folder).mkdir(parents=True, exist_ok=True)
 
     canonical, language_report = {}, []
@@ -414,20 +421,48 @@ def build_content(output: Path, version: str) -> dict:
     french = canonical["fr"]
     for path in sources:
         raw, original = originals[path.stem]
-        (output / "locale-templates" / path.name).write_bytes(raw)
         updated = {rid: french[rid] if rid >= 9500 else value
                    for rid, value in original.items()}
         payload = write_pak(updated)
         if read_pak(payload) != updated:
             raise ValueError(f"Merged pack output validation failed: {path.name}")
+        # The manager only needs each template's locale-specific parameters.
+        # Ship neutral Sofiles captions instead of retaining legacy identities.
+        (output / "locale-templates" / path.name).write_bytes(payload)
         (output / "locales" / path.name).write_bytes(payload)
-        locale_report.append({"file": path.name, "template_sha256": _sha(raw),
+        locale_report.append({"file": path.name, "source_sha256": _sha(raw),
+                              "template_sha256": _sha(payload),
                               "output_sha256": _sha(payload),
-                              "source_template_identical": (output / "locale-templates" / path.name).read_bytes() == raw,
+                              "template_contains_only_sofiles_identity": all(not LEGACY_IDENTITY.search(value.decode("utf-8")) for value in updated.values()),
                               "metadata_below_9500_unchanged": all(updated[rid] == value for rid, value in original.items() if rid < 9500),
                               "french_content_from_9500": all(updated[rid] == french[rid] for rid in original if rid >= 9500)})
 
-    shutil.copyfile(SOURCE / "License.txt", output / "License.txt")
+    original_license = (SOURCE / "License.txt").read_bytes()
+    license_path = output / "licenses/Clover-original.txt"
+    license_path.write_bytes(original_license)
+    notice = (
+        "# Sofiles licences and notices\n\n"
+        "## Sofiles additions\n\n"
+        "Sofiles tools, interface and documentation: © 2026 Sofiles contributors. "
+        "This credit covers the additions made for Sofiles. It does not claim "
+        "authorship or ownership of the supplied engine or its third-party components.\n\n"
+        "## Original application\n\n"
+        "Sofiles uses the Clover 3.0.406 base from EJIE Technology / EJIE Soft Studio, "
+        "© 2014 EJIE Technology. Its original licence is preserved byte for byte in "
+        "[Clover-original.txt](Clover-original.txt). Rebranding leaves the original "
+        "rights and licence terms in place. The engine is not represented as open source.\n\n"
+        "## Third-party components\n\n"
+        "The supplied application contains components derived from Chromium. "
+        "Their respective authors retain their rights. Original component notices "
+        "and any licence terms contained in the supplied artifacts remain applicable. "
+        "This notice does not relicense those components or create rights in their code.\n"
+    )
+    (output / "licenses/NOTICE.md").write_text(notice, encoding="utf-8")
+    root_license = output / "License.txt"
+    if root_license.exists():
+        if root_license.is_symlink() or root_license.read_bytes() != original_license:
+            raise ValueError("Unexpected root licence; refusing to remove unrelated content")
+        root_license.unlink()
     document_paths = []
     for language in LANGUAGE_SOURCES:
         directory = output / "docs" / language
@@ -458,6 +493,10 @@ def build_content(output: Path, version: str) -> dict:
                 raise ValueError(f"Unexpected external document URL: {href}")
         if "\ufffd" in text:
             raise ValueError("Invalid replacement character in document")
+        if LEGACY_IDENTITY.search(text):
+            raise ValueError(f"Legacy or personal identity in document: {path}")
+        if "\u2014" in text or "\u2013" in text:
+            raise ValueError(f"Long dash in document prose: {path}")
         document_report.append({"file": str(path.relative_to(output)),
                                 "local_links_checked": local_count,
                                 "no_scripts_forms_or_remote_assets": True,
@@ -467,12 +506,19 @@ def build_content(output: Path, version: str) -> dict:
               "uri_resource_markers": {str(k): v for k, v in URI_MARKERS.items()},
               "legacy_update_endpoint_11334": "empty",
               "default_language": "fr", "original_templates": len(locale_report),
+              "template_policy": "Original metadata below 9500; neutral Sofiles French text from 9500.",
               "locale_merges": locale_report, "documents": document_report,
               "contact": CONTACT, "donation_url": DONATE_URL,
               "donation_optional": True, "suggested_amount": "20.00", "currency": "CHF",
               "paypal_recipient_confirmation_required": True,
               "paypal_account_verified": False, "payment_initiated": False,
-              "source_license_preserved": (output / "License.txt").read_bytes() == (SOURCE / "License.txt").read_bytes(),
+              "source_license_preserved": license_path.read_bytes() == original_license,
+              "source_license_path": "licenses/Clover-original.txt",
+              "source_license_sha256": _sha(original_license),
+              "root_legacy_license_absent": not root_license.exists(),
+              "provenance_confined_to_license_folder": True,
+              "ordinary_documents_have_no_legacy_or_personal_identity": True,
+              "ordinary_documents_have_no_long_dashes": True,
               "native_dialogs_outside_pak": "Not changed; inherited native strings and Windows dialogs may use another language.",
               "runtime_uri_resolution": "Required by manager before activating the selected packs.",
               "security_guarantee": False, "target_execution": False,
@@ -487,7 +533,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--version", default="1.1.0")
+    parser.add_argument("--version", default="1.2.0")
     args = parser.parse_args()
     result = build_content(args.output, args.version)
     print(json.dumps({"output": result["output"], "version": result["version"],

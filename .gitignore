@@ -1,7 +1,14 @@
 # The repository contains our source tools, never third-party binaries or profiles.
 /*
 !/.gitignore
+!/.gitattributes
 !/README.md
+!/LICENSE
+!/CONTRIBUTING.md
+!/SECURITY.md
+!/licenses/
+!/installer/
+!/updates/
 !/PRODUCT.md
 !/DESIGN.md
 !/SOFILES.md
@@ -23,6 +30,8 @@
 !/tools/test_sofiles_product.py
 !/tools/new_sofiles_signing_key.ps1
 !/tools/sign_sofiles_release.ps1
+!/tools/test_sofiles_installer.py
+!/tools/publish_sofiles.py
 /analysis/*
 !/analysis/branding/
 /analysis/branding/*
@@ -47,3 +56,5 @@
 /dist/
 /builds/
 /.impeccable/
+
+/docs/PASSATION.md

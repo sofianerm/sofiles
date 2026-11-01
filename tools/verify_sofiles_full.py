@@ -66,10 +66,13 @@ assert base.sha((out / "licenses/Clover-original.txt").read_bytes()) == base.sha
 versions = json.loads((report_path.parent / "windows-version-info.json").read_text(encoding="utf-8-sig"))
 for entry in versions:
     assert entry["ProductName"] == "Sofiles"
-    assert entry["CompanyName"] == "Sofiane Messaoudi"
+    assert entry["CompanyName"] == ("Sofiane Messaoudi" if version in ["1.0.0", "1.1.0"] else "Sofiles")
     assert entry["FileVersion"] == version + ".0"
     assert entry["ProductVersion"] == version
-    assert "EJIE" in entry["LegalCopyright"] and "Sofiane Messaoudi" in entry["LegalCopyright"]
+    if version in ["1.0.0", "1.1.0"]:
+        assert "EJIE" in entry["LegalCopyright"] and "Sofiane Messaoudi" in entry["LegalCopyright"]
+    else:
+        assert "Sofiles" in entry["LegalCopyright"] and "licenses/NOTICE.md" in entry["LegalCopyright"]
 result = {"binaries": results, "files_manifest_verified": len(report["manifest_sha256"]),
           "windows_version_info_verified": len(versions), "original_licence_preserved": True}
 (report_path.parent / "static-verification.json").write_text(json.dumps(result, indent=2), encoding="utf-8")

@@ -1,22 +1,65 @@
+<p align="center">
+  <img src="assets/sofiles/sofiles.svg" alt="Icône Sofiles" width="96" height="96">
+</p>
+
 # Sofiles
 
-Personnalisation et nouveaux outils par **Sofiane Messaoudi**. Contact : [so.messaoudi@gmail.com](mailto:so.messaoudi@gmail.com).
+Des onglets et des favoris dans l’Explorateur de fichiers Windows.
 
-Cette version ajoute un gestionnaire de langue français/anglais/allemand, une aide locale traduite, un installateur par utilisateur et un client de mise à jour avec contrôle de signature. Le don PayPal est facultatif, avec un montant proposé de 20 CHF. L’adresse destinataire doit être confirmée sur le compte PayPal ; aucun paiement n’est effectué par ces outils.
+Sofiles regroupe plusieurs dossiers dans une même fenêtre et permet de retrouver ses emplacements favoris. Les réglages et l’aide sont disponibles en français, en anglais et en allemand.
 
-Le moteur historique est Clover 3.0.406, © EJIE Technology, avec des composants Chromium et tiers. **Ce dépôt ne contient aucun de leurs binaires.** Les modifications ne transfèrent pas la propriété du moteur. La licence accompagnant l’archive historique interdit sa redistribution modifiée. L’édition binaire est une copie personnelle locale ; aucune version téléchargeable n’est publiée ici.
+![Réglages de langue Sofiles](docs/images/sofiles.png)
 
-## Utilisation de la copie locale
+## Télécharger
 
-- `builds/Sofiles-1.1.0/SofilesSettings.exe` : langue, aide, contact et mises à jour.
-- `SofilesSettings.exe --launch` : applique la langue et lance le moteur.
-- `dist/Sofiles-Setup-1.1.0.exe` : installateur local, pour le compte Windows courant.
+[Télécharger Sofiles 1.2.0 pour Windows](https://github.com/sofianerm/sofiles/releases/download/v1.2.0/Sofiles-Setup-1.2.0.exe)
 
-Fermer Sofiles avec son menu **Quitter** avant de changer de langue ou d’installer une version. Les dossiers et dialogues appartenant à Windows suivent la langue de Windows. Les quelques messages natifs hors des packs de langue restent en français. La configuration essayée utilise l’Explorateur classique ; l’interface moderne de Windows 11 n’est pas validée.
+La version 1.2.0 est une préversion publique de test. Les fichiers et notes de version sont sur la [page de la préversion](https://github.com/sofianerm/sofiles/releases/tag/v1.2.0).
 
-## Construction sous Windows
+Prérequis :
 
-Prérequis : Python 3 avec Pillow et pefile, et le compilateur C# .NET Framework 4.x présent sous Windows. Les nouveaux outils ciblent .NET Framework 4.8. Les binaires d’origine doivent être fournis localement dans `analysis/extracted` ; leurs empreintes sont vérifiées avant construction. Les inventaires de modifications sont conservés pour rendre les changements contrôlables.
+- L’Explorateur classique de Windows. La configuration testée sous Windows 11 utilise SwitchExplorer pour activer ce mode.
+- .NET Framework 4.8 pour les outils de réglages.
+
+Consulter les [limites de sécurité](SECURITY.md) avant d’utiliser cette préversion.
+
+## Installer et lancer
+
+1. Activer l’Explorateur classique si nécessaire, puis fermer les fenêtres Sofiles déjà ouvertes avec le menu Quitter.
+2. Exécuter `Sofiles-Setup-1.2.0.exe` et choisir la langue de l’installation.
+3. Installer Sofiles pour le compte Windows courant. Le programme d’installation propose les raccourcis et les options de lancement.
+4. Lancer Sofiles depuis le menu Démarrer. Les réglages et la désinstallation sont accessibles depuis ce même menu.
+
+![Programme d’installation Sofiles](docs/images/installer.png)
+
+Pour changer de langue, ouvrir les réglages Sofiles, enregistrer le choix, puis fermer toutes les fenêtres Sofiles et relancer l’application. Les noms de dossiers et les dialogues Windows suivent la langue de Windows.
+
+La désinstallation conserve le profil et les favoris.
+
+## Fonctions
+
+- Ouvrir plusieurs dossiers dans les onglets d’une même fenêtre.
+- Garder des emplacements dans les favoris.
+- Choisir le français, l’anglais ou l’allemand pour les menus, les réglages et l’aide locale.
+- Consulter l’aide et les informations de version depuis les réglages.
+- Choisir de vérifier les mises à jour au lancement, lorsqu’un canal est configuré.
+
+La vérification automatique des mises à jour est facultative. Le gestionnaire affiche la version disponible et ses changements avant de proposer le téléchargement. Il vérifie la signature du manifeste et l’empreinte SHA-256 du fichier, puis demande l’accord de l’utilisateur avant d’ouvrir le programme d’installation. Les versions peuvent aussi être téléchargées depuis [GitHub Releases](https://github.com/sofianerm/sofiles/releases).
+
+Un don PayPal facultatif de 20 CHF est proposé dans les réglages. L’utilisation de Sofiles ne nécessite aucun paiement.
+
+## Limites connues
+
+- L’Explorateur moderne de Windows 11 n’a pas été validé.
+- Le raccourci Ctrl+T n’a pas été vérifié dans le moteur natif.
+- Quelques messages d’erreur natifs restent en français.
+- L’examen de sécurité du moteur historique reste à compléter.
+
+## Code et compilation
+
+Les nouveaux outils sont écrits en C# pour .NET Framework 4.8. Les scripts Python préparent les ressources et la distribution. La version 1.2.0 utilise un programme d’installation NSIS 3.13 en français, en anglais et en allemand.
+
+Le dépôt contient les sources des outils et les scripts de construction. Les binaires du moteur tiers doivent être fournis séparément pour compiler une distribution complète.
 
 ```powershell
 python -m pip install Pillow pefile
@@ -24,22 +67,16 @@ python tools/build_sofiles_product.py
 python tools/test_sofiles_product.py
 ```
 
-La construction crée une copie séparée et un setup. Elle n’installe pas le programme, n’enregistre pas de DLL et ne change pas le mode de l’Explorateur. Les réglages sont stockés séparément des fichiers installés. La désinstallation conserve le profil et les favoris.
+Les prérequis, les fichiers d’entrée et les limites des tests sont détaillés dans [Compiler Sofiles](docs/BUILD.md).
 
-## Mises à jour
+## Contribuer
 
-Le client est écrit ; **le canal en ligne reste désactivé**. La création d’un dépôt privé ne rend pas ses fichiers accessibles aux utilisateurs anonymes de l’application. Aucun jeton GitHub n’est embarqué dans Sofiles.
+Les rapports de bugs, corrections et traductions sont les bienvenus. Consulter [CONTRIBUTING.md](CONTRIBUTING.md) pour préparer une contribution et [les issues](https://github.com/sofianerm/sofiles/issues) pour signaler un problème reproductible.
 
-Voir [la procédure de publication](docs/UPDATES.md). Une version publiée doit fournir un setup et un manifeste signé décrivant sa version, son URL HTTPS, sa taille, son empreinte SHA-256 et ses changements dans les trois langues. Le client propose le téléchargement, vérifie les octets et demande à l’utilisateur avant d’ouvrir l’installateur.
+Contact : [so.messaoudi@gmail.com](mailto:so.messaoudi@gmail.com). Pour une vulnérabilité, suivre la [procédure de signalement privé](SECURITY.md).
 
-Le client de mise à jour ne corrige pas les vulnérabilités de l’ancien moteur. La signature RSA du manifeste ne constitue pas une signature Authenticode de l’exécutable Windows. Les essais de signature et de paquets ne constituent pas un audit complet de sécurité.
+## Licence
 
-## Fichiers
+Le code des nouveaux outils et scripts Sofiles est sous [licence MIT](LICENSE).
 
-- `src/sofiles/` : nouveaux outils C# de réglages, installation, désinstallation et mises à jour.
-- `tools/build_sofiles_product.py` : construction locale.
-- `tools/sofiles_product_content.py` : ressources et documents FR/EN/DE.
-- `config/product.json` : identité et configuration du canal ; clé publique uniquement.
-- `tools/new_sofiles_signing_key.ps1` et `tools/sign_sofiles_release.ps1` : préparation des versions signées.
-
-© 2026 Sofiane Messaoudi pour les nouveaux outils et modifications. Les droits des composants tiers restent applicables. Aucune licence de redistribution du moteur historique n’est accordée par ce dépôt.
+Le moteur historique est un composant binaire tiers propriétaire. Son code source n’est pas disponible dans ce dépôt et la licence MIT des outils ne s’y applique pas. Ses conditions et celles des autres composants tiers sont répertoriées dans [licenses/NOTICE.md](licenses/NOTICE.md). Les distributions conservent leurs notices et licences.

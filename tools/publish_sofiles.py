@@ -45,6 +45,14 @@ def main():
     status,repo=api('GET','/repos/'+REPO)
     if status!=200:sys.exit('Repository unavailable (HTTP %s).'%status)
     status,release=api('GET','/repos/'+REPO+'/releases/tags/'+tag)
+    # GitHub's tag endpoint can omit drafts. Resolve an existing draft before
+    # creating or uploading anything, so retries do not create duplicate releases.
+    if status==404:
+        list_status,releases=api('GET','/repos/'+REPO+'/releases?per_page=100')
+        if list_status!=200:sys.exit('Release listing failed (HTTP %s).'%list_status)
+        matches=[item for item in releases if item.get('tag_name')==tag]
+        if len(matches)>1:sys.exit('Multiple releases share this tag; select one before continuing.')
+        if matches:status,release=200,matches[0]
     if args.mode=='draft' and status==404:
         if not args.body_file:sys.exit('--body-file required')
         status,release=api('POST','/repos/'+REPO+'/releases',{'tag_name':tag,'target_commitish':'main','name':'Sofiles '+config['version'],
